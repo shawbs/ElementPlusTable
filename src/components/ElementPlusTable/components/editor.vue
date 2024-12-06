@@ -20,11 +20,12 @@
 </template>
 
 <script setup lang="ts">
-import {Editor, Toolbar} from "@wangeditor/editor-for-vue";
-import {shallowRef,ref,onBeforeUnmount } from 'vue';
+import { Editor, Toolbar } from "@wangeditor/editor-for-vue";
+import { shallowRef, ref, onBeforeUnmount } from "vue";
+import LANG from "../lang";
 
 // API 引用
-import userAPI from '@/api/user';
+import userAPI from "@/api/user";
 
 const props = defineProps({
   modelValue: {
@@ -51,12 +52,12 @@ const toolbarConfig = ref({
 }); // 工具条配置
 // 编辑器配置
 const editorConfig = ref({
-  placeholder: "请输入内容...",
+  placeholder: LANG.tip.inputTip,
   MENU_CONF: {
     uploadImage: {
       // 自定义图片上传
       async customUpload(file: any, insertFn: any) {
-        userAPI.uploadImage(file).then((data:any) => {
+        userAPI.uploadImage(file).then((data: any) => {
           insertFn(data.url);
         });
       },
@@ -81,10 +82,10 @@ onBeforeUnmount(() => {
 </script>
 
 <style src="@wangeditor/editor/dist/css/style.css"></style>
-<style lang="less">
-.w-e-full-screen-container{
+<style lang="scss">
+.w-e-full-screen-container {
   z-index: 99 !important;
-  .w-e-text-container{
+  .w-e-text-container {
     height: 100% !important;
   }
 }

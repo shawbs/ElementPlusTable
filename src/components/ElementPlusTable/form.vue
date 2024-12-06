@@ -1,21 +1,38 @@
 <template>
-  <div class="ppa-form">
-    <!-- {{ options }} -->
+  <div class="custom-elementplus-form">
+    <!-- {{ formData }} -->
     <el-form
+      @submit.native.prevent
       ref="formRef"
       :model="formData"
       :label-position="options.labelPosition"
       :label-width="options.labelWidth"
       :inline="options.inline"
     >
+      <div><slot name="formBefore" /></div>
       <el-row :gutter="20" v-if="options.isCol">
-        <el-col :span="item?.colspan || 12" v-for="item in searchDataArr" :key="item.dataIndex">
+        <el-col
+          :span="item?.colspan || 12"
+          v-for="item in searchDataArr"
+          :key="item.dataIndex"
+        >
           <formItem
             :options="options"
             :item="item"
             :data="formData"
             @change="changeHandle"
-          />
+          >
+            <template
+              v-if="$slots[`form-${item.dataIndex}`]"
+              #[`form-${item.dataIndex}`]
+            >
+              <slot
+                :name="`form-${item.dataIndex}`"
+                :form-source="formData"
+                :data-index="item.dataIndex"
+              ></slot>
+            </template>
+          </formItem>
         </el-col>
       </el-row>
       <template v-else v-for="item in searchDataArr" :key="item.dataIndex">
@@ -24,19 +41,34 @@
           :item="item"
           :data="formData"
           @change="changeHandle"
-        />
+        >
+          <template
+            v-if="$slots[`form-${item.dataIndex}`]"
+            #[`form-${item.dataIndex}`]
+          >
+            <slot
+              :name="`form-${item.dataIndex}`"
+              :form-source="formData"
+              :data-index="item.dataIndex"
+            ></slot>
+          </template>
+        </formItem>
       </template>
 
-      <div class="form-btns">
+      <div><slot name="formAfter" /></div>
+
+      <div class="form-btns" v-if="options.showFooter">
         <el-space>
           <el-button
             type="primary"
             :loading="submitLoading"
-            @click="submitForm(formRef)"
+            @click="submitForm()"
+            v-if="options.showSubmitBtn"
+            v-auth="options.submit?.auth || []"
           >
             {{ options.submitText }}
           </el-button>
-          <el-button type="default" @click="reset">
+          <el-button type="default" @click="reset" v-if="options.showResetBtn">
             {{ options.resetText }}
           </el-button>
         </el-space>
@@ -46,11 +78,10 @@
 </template>
 
 <script setup lang="ts">
-import type { FormInstance, FormRules } from "element-plus";
-import { computed, reactive, ref } from "vue";
-import type { formOptionsType, formColumnsType } from "./option";
+import { computed, onMounted, reactive, ref, useSlots } from "vue";
+import type { formOptionsType, formColumnsType } from "./js/type";
 import formItem from "./components/formItem.vue";
-import { defaultOptForm } from "./state";
+import { defaultOptForm, defaultColumnForm } from "./js/option";
 
 interface propsType {
   columns: formColumnsType[];
@@ -65,11 +96,9 @@ const props = withDefaults(defineProps<propsType>(), {
 });
 const emits = defineEmits(["finish", "reset"]);
 
-const defaultOptions = defaultOptForm;
-
 const options = computed((): formOptionsType => {
   return <formOptionsType>{
-    ...defaultOptions,
+    ...defaultOptForm,
     ...props.options,
   };
 });
@@ -78,10 +107,17 @@ const options = computed((): formOptionsType => {
 const getDefaultValue = (columns: formColumnsType[]): Record<string, any> => {
   const data: Record<string, any> = {};
   columns.forEach((item) => {
-    data[item.dataIndex] =
-      props.model[item.dataIndex] || item.defaultValue || undefined;
+    // debugger;
+    let defaultValue =
+      props.model[item.dataIndex] ??
+      item.defaultValue?.value ??
+      item.defaultValue;
+    if (item.formType === "numberRange" && !defaultValue) {
+      defaultValue = [];
+    }
+    data[item.dataIndex] = defaultValue;
   });
-  return {...props.model, ...data};
+  return { ...props.model, ...data };
 };
 
 const formData = reactive<any>(getDefaultValue(props.columns));
@@ -98,10 +134,9 @@ const columnToSearchData = (columns: formColumnsType[]): formColumnsType[] => {
       );
 
       return {
+        ...defaultColumnForm,
+        placeholder: item.placeholder || item.title,
         ...item,
-        placeholder: isInput
-          ? options.value.placeholderPrefixInput
-          : options.value.placeholderPrefixSelect,
       };
     });
 };
@@ -133,11 +168,10 @@ const reset = () => {
 
 const submitLoading = ref(false);
 
-const submitForm = (formEl: FormInstance | undefined) => {
-  if (!formEl) return;
+const submitForm = () => {
+  if (!formRef.value) return;
   const params = { ...props.model, ...formData };
-  // console.log(params)
-  formEl.validate((valid) => {
+  formRef.value.validate((valid: boolean) => {
     if (valid) {
       emits("finish", params);
     } else {
@@ -146,7 +180,7 @@ const submitForm = (formEl: FormInstance | undefined) => {
   });
 };
 
-// 修复表单项
+// 修改表单项
 const setColumn = (
   dataIndex: string,
   key: "hide" | "disabled" | "readonly",
@@ -160,23 +194,22 @@ const setColumn = (
 };
 
 const changeHandle = (dataIndex: string, newValue: any) => {
-  // console.log(dataIndex, newValue)
+  formData[dataIndex] = newValue;
   const column = searchDataArr.value.find(
     (item) => item.dataIndex == dataIndex
   );
-  formData[dataIndex] = newValue;
-  column?.onChange && column?.onChange(newValue);
+  column?.onChange && column?.onChange(newValue, formData);
 };
 
 defineExpose({
   getFormData,
-  submitLoading,
   setColumn,
+  submit: submitForm,
 });
 </script>
 
-<style lang="less">
-.ppa-form {
+<style lang="scss">
+.custom-elementplus-form {
   .form-btns {
     text-align: center;
     margin-bottom: 20px;

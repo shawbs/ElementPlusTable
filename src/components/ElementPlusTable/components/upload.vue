@@ -1,5 +1,5 @@
 <template>
-  <div class="ppa-upload">
+  <div class="custom-elementplus-upload">
     <!-- {{ fileList }} -->
     <!-- {{ props }} -->
     <template v-if="isSigle">
@@ -14,15 +14,15 @@
         <template #trigger>
           <div v-if="props.type == 'image'" class="upload-img-btn">
             <div v-if="fileList[0]">
-              <el-icon v-if="uploadLoading" class="is-loading img-loading"
-                ><Loading
-              /></el-icon>
+              <el-icon v-if="uploadLoading" class="is-loading img-loading">
+                <Loading />
+              </el-icon>
               <img :src="fileList[0].url" alt="avatar" />
             </div>
             <div v-else>
-              <el-icon v-if="uploadLoading" class="is-loading"
-                ><Loading
-              /></el-icon>
+              <el-icon v-if="uploadLoading" class="is-loading">
+                <Loading />
+              </el-icon>
               <el-icon v-else><Plus /></el-icon>
             </div>
           </div>
@@ -43,9 +43,9 @@
       >
         <template #trigger>
           <div v-if="props.type == 'image'" class="upload-img-btn">
-            <el-icon v-if="uploadLoading" class="is-loading"
-              ><Loading
-            /></el-icon>
+            <el-icon v-if="uploadLoading" class="is-loading">
+              <Loading />
+            </el-icon>
             <el-icon v-else><Plus /></el-icon>
           </div>
           <el-button v-else :icon="Upload" :loading="uploadLoading">
@@ -69,10 +69,10 @@
 
 <script setup lang="ts">
 import { computed, ref } from "vue";
-import type { uploadType } from "../option";
+import type { uploadType } from "../js/type";
 import { ElMessage } from "element-plus";
 import { Loading, Upload, Plus } from "@element-plus/icons-vue";
-import { defaultOptUpload } from "../state";
+import { defaultOptUpload } from "../js/option";
 const props = withDefaults(defineProps<uploadType>(), defaultOptUpload);
 
 const modeValue = defineModel<string[] | string>({ default: "" });
@@ -146,11 +146,11 @@ const beforeUpload = async (file: any) => {
   const isLtSize = file.size / 1024 / 1024 < props.maxSize;
   const type = file.name.split(".").pop();
   if (!isLtSize) {
-    ElMessage.error(props.sizeWarn);
+    ElMessage.error(props.sizeWarn + props.maxSize + "MB");
     return false;
   }
   if (props.accept && !props.accept.includes(type)) {
-    ElMessage.error(props.typeWarn);
+    ElMessage.error(props.typeWarn + props.accept);
     return false;
   }
   if (
@@ -158,7 +158,7 @@ const beforeUpload = async (file: any) => {
     props.maxCount &&
     fileList.value.length >= props.maxCount
   ) {
-    ElMessage.error(props.limtWarn);
+    ElMessage.error(props.limtWarn + props.maxCount);
     return false;
   }
 
@@ -168,7 +168,7 @@ const beforeUpload = async (file: any) => {
 };
 
 const handleRemove = (file: any) => {
-  console.log("remove", file);
+  // console.log("remove", file);
   setTimeout(() => {
     modeValue.value = props.isSigle
       ? ""
@@ -240,58 +240,64 @@ const handleCancel = () => {
 };
 </script>
 
-<style lang="less">
-@width: 120px;
-@height: 120px;
-.ppa-upload,
-.el-upload {
+<style lang="scss">
+.custom-elementplus-upload {
+  --upload-size: 120px;
   .el-upload--picture-card {
-    --el-upload-picture-card-size: @width;
+    --el-upload-picture-card-size: var(--upload-size);
   }
   .el-upload-list--picture-card {
-    --el-upload-list-picture-card-size: @width;
+    --el-upload-list-picture-card-size: var(--upload-size);
   }
-  .upload-select {
-    width: @width;
-    height: @width;
-    margin-inline-end: 8px;
-    margin-bottom: 8px;
-    // text-align: center;
-    // vertical-align: top;
-    background-color: rgba(0, 0, 0, 0.02);
-    border: 1px dashed #d9d9d9;
-    border-radius: 8px;
-    cursor: pointer;
-    transition: border-color 0.3s;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-  }
-  .upload-img-btn {
-    position: relative;
-    > div {
-      width: 100%;
-      height: 100%;
+  .el-upload {
+    .el-upload--picture-card {
+      --el-upload-picture-card-size: var(--upload-size);
     }
-    .img-loading {
-      position: absolute;
-      top: 45%;
-      left: 45%;
-      z-index: 1;
+    .el-upload-list--picture-card {
+      --el-upload-list-picture-card-size: var(--upload-size);
     }
-    img {
-      width: 100%;
-      height: 100%;
+    .upload-select {
+      width: var(--upload-size);
+      height: var(--upload-size);
+      margin-inline-end: 8px;
+      margin-bottom: 8px;
+      // text-align: center;
+      // vertical-align: top;
+      background-color: rgba(0, 0, 0, 0.02);
+      border: 1px dashed #d9d9d9;
       border-radius: 8px;
-      vertical-align: bottom;
+      cursor: pointer;
+      transition: border-color 0.3s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
     }
-  }
-  &.el-upload--picture {
-    width: @width;
-    height: @width;
-    border: 1px dashed #d9d9d9;
-    border-radius: 8px;
-    background-color: rgba(0, 0, 0, 0.02);
+    .upload-img-btn {
+      position: relative;
+      > div {
+        width: 100%;
+        height: 100%;
+      }
+      .img-loading {
+        position: absolute;
+        top: 45%;
+        left: 45%;
+        z-index: 1;
+      }
+      img {
+        width: 100%;
+        height: 100%;
+        border-radius: 8px;
+        vertical-align: bottom;
+      }
+    }
+    &.el-upload--picture {
+      width: var(--upload-size);
+      height: var(--upload-size);
+      border: 1px dashed #d9d9d9;
+      border-radius: 8px;
+      background-color: rgba(0, 0, 0, 0.02);
+    }
   }
 }
 </style>
